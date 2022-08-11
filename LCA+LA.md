@@ -20,7 +20,7 @@
 Это и будет LCA этих двух вершин.
 
 
-## Smart $O(logN)$ на запрос
+## Smart за $O(logN)$ на запрос
 
 Воспользуемся обходом DFS для предпосчета массивов t_in и t_out
 
@@ -73,4 +73,82 @@ ll LCA_function(ll a, ll b) {
 ## GENIUS за $O(1)$ на запрос + препроцессинг за $O(nlogn)$
 
 Давайте попробуем свести задачу LCA к задаче про RMQ
+
+Заметим, что у 
+
+
+Псевдокод
+```cpp
+const int MAX = 100100;
+vector<vector<int>> g(MAX), sparse;
+vector<int> go, h, logs, used(MAX);
+
+void build() {
+    logs.resize(sz(h), 0);
+    for (int i = 1; i < sz(h); i++) {
+        logs[i] = logs[(i - 1) / 2] + 1;
+    }
+    sparse.resize(logs.back() + 1, vector<int>(sz(h), -1));
+    for (int i = 0; i < sz(h); i++) {
+        sparse[0][i] = i;
+    }
+    for (int k = 1; (1 << k) <= sz(h); k++) {
+        for (int i = 0; i < sz(h); i++) {
+            if (i + (1 << k) - 1 >= sz(h)) {
+                break;
+            }
+            if (h[sparse[k - 1][i]] > h[sparse[k - 1][i + (1 << (k - 1))]]) {
+                sparse[k][i] = sparse[k - 1][i + (1 << (k - 1))];
+                continue;
+            }
+            sparse[k][i] = sparse[k - 1][i];
+        }
+    }
+    for (int i = 1; i <= logs.back(); i++) {
+        for (int j = 0; j < sz(h); j++) {
+            if (sparse[i][j] == -1) {
+                sparse[i][j] = sparse[i - 1][j];
+            }
+        }
+    }
+}
+
+int get_min(int l, int r) {
+    if (h[sparse[logs[r - l]][l]] > h[sparse[logs[r - l]][r - (1 << logs[r - l]) + 1]]) {
+        return sparse[logs[r - l]][r - (1 << logs[r - l]) + 1];
+    }
+    return sparse[logs[r - l]][l];
+}
+
+void dfs(int v, int d) {
+    used[v] = true;
+    go.pb(v);
+    h.pb(d);
+    for (auto &u : g[v]) {
+        if (!used[u]) {
+            dfs(u, d + 1);
+            go.pb(v);
+            h.pb(d);
+        }
+    }
+}
+
+int main() {
+    // ввод графа, n - кол-во вершин
+    dfs(0, 0);
+    vector<int> first(n + 1, -1);
+    for (int i = 0; i < sz(go); i++) {
+        if (first[go[i]] == -1) {
+            first[go[i]] = i;
+        }
+    }
+    build();
+    // m - кол-во запросов
+    for (int i = 0; i < m; i++) {
+        // v, u - вершины
+        ans = go[get_min(min(first[v], first[u]), max(first[v], first[u]))];
+    }
+}
+```
+
 
